@@ -62,7 +62,7 @@ h2{font-size:13px;font-weight:500;color:var(--muted);margin:0 0 20px}
 
 /* chart */
 .chart{width:100%;height:auto;display:block;overflow:visible}
-.chart text{fill:var(--muted);font:11px var(--mono)}
+.chart text{fill:var(--muted);font:11px var(--mono);paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
 .chart .b{fill:#e4e4e7} .chart .b.cur{fill:var(--ink)}
 .chart .b:hover{fill:#c9c9cf} .chart .b.cur:hover{fill:#3a3a3e}
 .chart .base{stroke:var(--line)}
@@ -83,12 +83,42 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .link{background:none;color:var(--muted);padding:0;border-radius:0;font-size:13px}
 .link:hover{color:var(--ink);opacity:1}
 
-/* breakdown */
-.sources{display:grid;gap:16px}
-.src{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:baseline;font-size:14px}
-.src .pct{color:var(--muted);font-size:13px;margin-left:8px}
-.src .track{grid-column:1/-1;height:2px;background:var(--soft)}
-.src .track i{display:block;height:100%;background:var(--ink)}
+/* section head with a control on the right */
+.sechead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.sechead h2{margin:0}
+.seg{display:inline-flex;background:var(--soft);border-radius:8px;padding:2px;gap:2px}
+.seg button{background:transparent;color:var(--muted);padding:4px 10px;border-radius:6px;font-size:12px}
+.seg button:hover{opacity:1;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin-bottom:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;flex:none;display:inline-block}
+.sw.line{height:2px;border-radius:1px}
+
+/* composition: one 100% bar + ranked list */
+.mix{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin-bottom:24px}
+.mix i{display:block;height:100%;min-width:2px;transition:opacity .15s}
+.mix.hl i{opacity:.25} .mix.hl i.on{opacity:1}
+.mixrows{display:grid}
+.mixrow{display:grid;grid-template-columns:10px minmax(0,1fr) auto 44px 56px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.mixrow:last-child{border-bottom:0}
+.mixrow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mixrow .amt{font:500 14px var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.mixrow .p{font:13px var(--mono);color:var(--muted);text-align:right}
+.mixrow .ch{font:12px var(--mono);text-align:right;color:var(--muted)}
+.mixrow.on{background:linear-gradient(90deg,var(--soft),transparent)}
+
+/* tooltip */
+.tip{position:fixed;z-index:10;pointer-events:none;background:var(--bg);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.08);border-radius:10px;padding:10px 12px;font-size:12px;min-width:160px;opacity:0;transition:opacity .1s}
+.tip.show{opacity:1}
+.tip .h{font-weight:600;margin-bottom:6px;font-size:13px}
+.tip .r{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;color:var(--muted);line-height:1.7}
+.tip .r b{font:500 12px var(--mono);color:var(--ink)}
+.tip .r b.good{color:var(--accent)} .tip .r b.bad{color:var(--neg)}
+.chart .hit{fill:transparent;cursor:default}
+.chart .hit:hover{fill:rgba(0,0,0,.025)}
+.chart .xh{stroke:var(--muted);stroke-width:1}
+.chart .lbl-ink{fill:var(--ink)}
 
 /* list */
 .listhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
@@ -158,6 +188,7 @@ footer{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding-top:8
 
   <section>
     <h2>Ostatnie 12 miesięcy</h2>
+    <div class="legend" id="chart-legend"></div>
     <div id="chart"></div>
   </section>
 
@@ -174,9 +205,33 @@ footer{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding-top:8
     <datalist id="sourcelist"></datalist>
   </section>
 
-  <section id="src-sec">
-    <h2 id="src-title"></h2>
-    <div class="sources" id="sources"></div>
+  <section id="mix-sec">
+    <div class="sechead">
+      <h2 id="mix-title"></h2>
+      <div class="seg" id="mix-period" role="group" aria-label="Okres">
+        <button type="button" data-p="cur">Ten miesiąc</button>
+        <button type="button" data-p="prev">Poprzedni</button>
+        <button type="button" data-p="year">Rok</button>
+      </div>
+    </div>
+    <div class="mix" id="mix"></div>
+    <div class="mixrows" id="mixrows"></div>
+  </section>
+
+  <section id="pace-sec">
+    <h2>Tempo wydatków</h2>
+    <div class="legend" id="pace-legend"></div>
+    <div id="pace"></div>
+  </section>
+
+  <section id="io-sec">
+    <h2>Przychody i wydatki · 6 miesięcy</h2>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--ink)"></i>Przychody</span>
+      <span><i class="sw" style="background:#cfcfd4"></i>Wydatki</span>
+      <span>liczba nad parą = bilans</span>
+    </div>
+    <div id="io"></div>
   </section>
 
   <section>
@@ -195,6 +250,7 @@ footer{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding-top:8
   </footer>
 </main>
 <div class="toast" id="toast" role="status"></div>
+<div class="tip" id="tip" aria-hidden="true"></div>
 
 <script>
 const USD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
@@ -236,7 +292,12 @@ const TABS = {
     ].concat(i%2?[{date:m+'-24',amount:90+i*20,source:'Kino i restauracja (przykład)',kind:'Rozrywka'}]:[]); }
   }
 };
+/* Categorical colours, fixed order (validated for colour-blind separation). Colour follows the category, never its rank; "Inne" is neutral grey. */
+const SERIES = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
+const OTHER = '#a1a1aa';
+const colorOf = (c,kind) => { const i=c.kinds.indexOf(kind); return (kind==='Inne'||i<0||i>=SERIES.length) ? OTHER : SERIES[i]; };
 const state = { zarobki:{entries:[],goal:0}, wydatki:{entries:[],goal:0} };
+let mixPeriod = 'cur', mixHover = null;
 let tab = 'zarobki', filter = 'all', pendingDelete = null;
 const cfg = () => TABS[tab], S = () => state[tab];
 
@@ -306,42 +367,179 @@ function render(){
     <div class="stat"><div class="eyebrow">Rok ${year}</div><div class="v">${USD.format(yearSum)}</div></div>
     <div class="stat"><div class="eyebrow">Średnio / miesiąc</div><div class="v">${USD.format(avg)}</div></div>`;
 
-  renderChart(months, byMonth, cur, goal, c.moreIsGood);
-  renderBreakdown(yearEntries, yearSum, year, c);
+  renderChart(months, byMonth, cur, goal, c);
+  renderMix(c, cur, prev, year);
+  renderPace(cur, prev);
+  renderIO(months.slice(6));
   renderFilter(byMonth);
   renderList();
   $('sourcelist').innerHTML = [...new Set(entries.map(e=>e.source))].map(s=>`<option value="${esc(s)}">`).join('');
 }
 
-function niceMax(v){ if(v<=0) return 1000; const p=Math.pow(10,Math.floor(Math.log10(v))); for(const m of [1,2,2.5,5,10]) if(m*p>=v) return m*p; return 10*p; }
+function niceMax(v){ if(v<=0) return 1000; const p=Math.pow(10,Math.floor(Math.log10(v))); for(const m of [1,1.5,2,2.5,3,4,5,6,8,10]) if(m*p>=v) return m*p; return 10*p; }
 const short = v => v>=1000 ? '$'+(Math.round(v/100)/10).toString().replace(/\.0$/,'')+'k' : USD0.format(v);
 
-function renderChart(months, byMonth, cur, goal, moreIsGood){
-  const W=720,H=200,T=22,B=26;
+/* ---------- tooltip ---------- */
+const tip = $('tip');
+function showTip(ev, html){
+  tip.innerHTML = html; tip.classList.add('show');
+  const r = tip.getBoundingClientRect(), pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if(x + r.width > innerWidth - 8) x = ev.clientX - r.width - pad;
+  if(y + r.height > innerHeight - 8) y = ev.clientY - r.height - pad;
+  tip.style.left = Math.max(8,x)+'px'; tip.style.top = Math.max(8,y)+'px';
+}
+const hideTip = () => tip.classList.remove('show');
+const tipRow = (color, name, val) => `<div class="r"><i class="sw" style="background:${color}"></i><span>${esc(name)}</span><b>${val}</b></div>`;
+// Charts register hover handlers here, keyed by element id; rebuilt on every render.
+const hovers = {};
+function bindHover(el){
+  el.onmousemove = ev => { const h=hovers[el.id]; if(h) h(ev); };
+  el.onmouseleave = () => { hideTip(); const h=hovers[el.id+':leave']; if(h) h(); };
+}
+['chart','pace','io'].forEach(id=>bindHover($(id)));
+const svgX = (svg, ev, W) => { const r=svg.getBoundingClientRect(); return (ev.clientX-r.left)/r.width*W; };
+
+/* ---------- 12-month stacked bars ---------- */
+function renderChart(months, byMonth, cur, goal, c){
+  const {entries}=S();
+  const W=720,H=210,T=24,B=26;
+  // per month, per category
+  const per = months.map(m=>{ const o={}; for(const e of entries) if(ym(e.date)===m) o[e.kind]=(o[e.kind]||0)+(+e.amount||0); return o; });
   const vals = months.map(m=>byMonth.get(m)||0), top=Math.max(...vals);
   const max = niceMax(Math.max(top, goal||0));
   const y = v => T+(H-T-B)*(1-v/max);
-  const bw = W/12, w = Math.min(28,bw*.5);
-  const gc = moreIsGood ? 'var(--accent)' : 'var(--neg)';
-  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sumy z ostatnich 12 miesięcy">`;
-  s += `<line class="base" x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>`;
-  if(goal) s+=`<line class="goal-l" style="stroke:${gc}" x1="0" x2="${W}" y1="${y(goal)}" y2="${y(goal)}"/><text style="fill:${gc}" x="0" y="${y(goal)-6}">${moreIsGood?'cel':'budżet'} ${short(goal)}</text>`;
+  const bw = W/12, w = Math.min(30,bw*.52);
+  const gc = c.moreIsGood ? 'var(--accent)' : 'var(--neg)';
+  const used = c.kinds.filter(k=>per.some(o=>o[k]));
+  $('chart-legend').innerHTML = used.length>1 ? used.map(k=>`<span><i class="sw" style="background:${colorOf(c,k)}"></i>${esc(k)}</span>`).join('') : '';
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sumy z ostatnich 12 miesięcy według kategorii"><defs>`;
+  months.forEach((m,i)=>{ const v=vals[i]; if(!v) return; const x=i*bw+bw/2-w/2, h=Math.max(2,y(0)-y(v));
+    s+=`<clipPath id="cb${i}"><rect x="${x}" y="${y(0)-h}" width="${w}" height="${h+4}" rx="4"/></clipPath>`; });
+  s += `</defs><line class="base" x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>`;
+  if(goal) s+=`<line class="goal-l" style="stroke:${gc}" x1="0" x2="${W}" y1="${y(goal)}" y2="${y(goal)}"/><text style="fill:${gc}" x="0" y="${y(goal)-6}">${c.moreIsGood?'cel':'budżet'} ${short(goal)}</text>`;
   months.forEach((m,i)=>{
-    const v=vals[i], cx=i*bw+bw/2, x=cx-w/2, h=Math.max(v>0?2:0,y(0)-y(v));
+    const v=vals[i], cx=i*bw+bw/2, x=cx-w/2;
     if(v>0){
-      s+=`<rect class="b${m===cur?' cur':''}" x="${x}" y="${y(0)-h}" width="${w}" height="${h}" rx="4"><title>${monthLabel(m)}: ${USD.format(v)}</title></rect>`;
-      if(m===cur || v===top) s+=`<text x="${cx}" y="${y(0)-h-7}" text-anchor="middle" style="fill:var(--ink)">${short(v)}</text>`;
+      let acc=0; s+=`<g clip-path="url(#cb${i})">`;
+      const ks = c.kinds.filter(k=>per[i][k]);
+      ks.forEach((k,j)=>{ const a=per[i][k], y1=y(acc+a), y0=y(acc); acc+=a;
+        const gap = j<ks.length-1 ? 2 : 0;   // 2px surface gap between stacked segments
+        s+=`<rect x="${x}" y="${y1+gap}" width="${w}" height="${Math.max(0,y0-y1-gap)}" fill="${colorOf(c,k)}" opacity="${m===cur?1:.8}"/>`; });
+      s+='</g>';
+      if(m===cur || v===top) s+=`<text class="lbl-ink" x="${cx}" y="${y(v)-7}" text-anchor="middle">${short(v)}</text>`;
     }
-    s+=`<text x="${cx}" y="${H-6}" text-anchor="middle"${m===cur?' style="fill:var(--ink)"':''}>${MONTHS[+m.slice(5)-1]}</text>`;
+    s+=`<text x="${cx}" y="${H-6}" text-anchor="middle"${m===cur?' class="lbl-ink" font-weight="600"':''}>${MONTHS[+m.slice(5)-1]}</text>`;
+    s+=`<rect class="hit" x="${i*bw}" y="0" width="${bw}" height="${H-B+4}" data-i="${i}"/>`;
   });
   $('chart').innerHTML = s+'</svg>';
+  hovers.chart = ev => {
+    const i = Math.min(11,Math.max(0,Math.floor(svgX($('chart').firstChild,ev,W)/bw)));
+    const ks = Object.entries(per[i]).sort((a,b)=>b[1]-a[1]);
+    showTip(ev, `<div class="h">${monthLabel(months[i])} · ${USD.format(vals[i])}</div>` +
+      (ks.length ? ks.map(([k,a])=>tipRow(colorOf(c,k),k,USD.format(a))).join('') : '<div class="r" style="grid-template-columns:1fr">Brak wpisów</div>'));
+  };
 }
 
-function renderBreakdown(list,total,year,c){
-  const m=[...sumBy(list,e=>e[c.groupBy])].sort((a,b)=>b[1]-a[1]);
-  $('src-sec').hidden = !m.length;
-  $('src-title').textContent=c.groupTitle+year;
-  $('sources').innerHTML = m.map(([k,v])=>`<div class="src"><span>${esc(k)}</span><span><span class="num">${USD.format(v)}</span><span class="pct">${Math.round(v/total*100)}%</span></span><div class="track"><i style="width:${v/total*100}%"></i></div></div>`).join('');
+/* ---------- composition: where the money goes / comes from ---------- */
+function renderMix(c, cur, prev, year){
+  const {entries}=S();
+  const inP = p => p==='cur' ? e=>ym(e.date)===cur : p==='prev' ? e=>ym(e.date)===prev : e=>e.date.startsWith(year);
+  const base = mixPeriod==='cur' ? prev : mixPeriod==='prev' ? (()=>{ const d=new Date(+prev.slice(0,4),+prev.slice(5)-2,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); })() : null;
+  const now = sumBy(entries.filter(inP(mixPeriod)), e=>e.kind);
+  const before = base ? sumBy(entries.filter(e=>ym(e.date)===base), e=>e.kind) : null;
+  const total = [...now.values()].reduce((a,b)=>a+b,0);
+  $('mix-sec').hidden = !entries.length;
+  $('mix-title').textContent = tab==='wydatki' ? 'Na co idą pieniądze' : 'Skąd są pieniądze';
+  for(const b of $('mix-period').children){ b.setAttribute('aria-pressed', String(b.dataset.p===mixPeriod)); if(b.dataset.p==='year') b.textContent='Rok '+year; }
+  const rows = [...now].sort((a,b)=>b[1]-a[1]);
+  if(!rows.length){ $('mix').innerHTML=''; $('mix').style.background='var(--soft)'; $('mixrows').innerHTML=`<div class="empty" style="padding:16px 0">Brak wpisów w tym okresie.</div>`; return; }
+  $('mix').style.background='';
+  $('mix').classList.toggle('hl', !!mixHover && now.has(mixHover));
+  $('mix').innerHTML = rows.map(([k,v])=>`<i data-k="${esc(k)}" class="${k===mixHover?'on':''}" style="flex:${v} 0 0;background:${colorOf(c,k)}" title="${esc(k)}: ${USD.format(v)}"></i>`).join('');
+  $('mixrows').innerHTML = rows.map(([k,v])=>{
+    let ch='';
+    if(before){ const b=before.get(k)||0;
+      if(!b) ch='<span title="Nowa kategoria w tym okresie">nowe</span>';
+      else { const p=(v-b)/b*100, good=(p>=0)===c.moreIsGood; ch = Math.abs(p)<1 ? '0%' : `<span class="${good?'good':'bad'}">${p>0?'+':'−'}${Math.abs(p).toFixed(0)}%</span>`; } }
+    return `<div class="mixrow${k===mixHover?' on':''}" data-k="${esc(k)}"><i class="sw" style="background:${colorOf(c,k)}"></i><span class="n">${esc(k)}</span><span class="amt">${USD.format(v)}</span><span class="p">${Math.round(v/total*100)}%</span><span class="ch">${ch}</span></div>`;
+  }).join('');
+}
+$('mix-period').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; mixPeriod=b.dataset.p; render(); });
+function setMixHover(k){ if(k===mixHover) return; mixHover=k;
+  $('mix').classList.toggle('hl', !!k);
+  for(const el of document.querySelectorAll('#mix i,#mixrows .mixrow')) el.classList.toggle('on', el.dataset.k===k); }
+['mix','mixrows'].forEach(id=>{ $(id).addEventListener('mouseover',e=>{ const t=e.target.closest('[data-k]'); setMixHover(t?t.dataset.k:null); }); $(id).addEventListener('mouseleave',()=>setMixHover(null)); });
+
+/* ---------- spending pace: cumulative this month vs last ---------- */
+function renderPace(cur, prev){
+  const show = tab==='wydatki' && state.wydatki.entries.length;
+  $('pace-sec').hidden = !show; if(!show) return;
+  const days = (k) => new Date(+k.slice(0,4), +k.slice(5), 0).getDate();
+  const cum = (k, upto) => { const d=new Array(days(k)+1).fill(0);
+    for(const e of state.wydatki.entries) if(ym(e.date)===k) d[+e.date.slice(8)] += +e.amount||0;
+    const out=[0]; for(let i=1;i<=upto;i++) out[i]=out[i-1]+d[i]; return out; };
+  const today = new Date().getDate();
+  const a = cum(cur, today), b = cum(prev, days(prev));
+  const goal = state.wydatki.goal;
+  const W=720,H=220,L=4,R=56,T=16,B=26, N=31;
+  const max = niceMax(Math.max(a[a.length-1], b[b.length-1], goal||0));
+  const x = d => L+(W-L-R)*(d/N), y = v => T+(H-T-B)*(1-v/max);
+  const path = arr => arr.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const curName = MONTHS_FULL[+cur.slice(5)-1], prevName = MONTHS_FULL[+prev.slice(5)-1];
+  const PREV = '#b8b8be';
+  $('pace-legend').innerHTML = `<span><i class="sw line" style="background:var(--ink)"></i>${curName} (do dziś)</span><span><i class="sw line" style="background:${PREV}"></i>${prevName}</span>`;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Skumulowane wydatki: ${curName} i ${prevName}">`;
+  s += `<line class="base" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>`;
+  [1,8,15,22,29].forEach(d=>{ s+=`<text x="${x(d)}" y="${H-6}" text-anchor="middle">${d}</text>`; });
+  if(goal) s+=`<line class="goal-l" style="stroke:var(--neg)" x1="${L}" x2="${W-R}" y1="${y(goal)}" y2="${y(goal)}"/><text style="fill:var(--neg)" x="${L}" y="${y(goal)-6}">budżet ${short(goal)}</text>`;
+  s += `<path d="${path(b)}" fill="none" stroke="${PREV}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  s += `<path d="${path(a)}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const ea=a.length-1, eb=b.length-1;
+  s += `<circle cx="${x(ea)}" cy="${y(a[ea])}" r="4" fill="var(--ink)" stroke="var(--bg)" stroke-width="2"/>`;
+  // direct labels: this month beside its last point, last month at its line end
+  s += `<text class="lbl-ink" x="${x(ea)+8}" y="${y(a[ea])-8}" font-weight="500">${short(a[ea])}</text>`;
+  if(b[eb]>0 && Math.abs(y(b[eb])-(y(a[ea])-8))>12 || ea<eb-6) s += `<text x="${x(eb)+8}" y="${y(b[eb])+4}">${short(b[eb])}</text>`;
+  s += `<g id="pace-xh" style="display:none"><line class="xh" y1="${T}" y2="${y(0)}"/><circle r="4" fill="var(--ink)" stroke="var(--bg)" stroke-width="2"/><circle r="4" fill="${PREV}" stroke="var(--bg)" stroke-width="2"/></g>`;
+  $('pace').innerHTML = s+'</svg>';
+  hovers.pace = ev => {
+    const d = Math.round(Math.min(N,Math.max(1,(svgX($('pace').firstChild,ev,W)-L)/(W-L-R)*N)));
+    const g = document.getElementById('pace-xh'); g.style.display='';
+    const [ln,c1,c2] = g.children; ln.setAttribute('x1',x(d)); ln.setAttribute('x2',x(d));
+    const va = d<=ea ? a[d] : null, vb = d<=eb ? b[d] : null;
+    c1.style.display = va==null?'none':''; c1.setAttribute('cx',x(d)); c1.setAttribute('cy',y(va||0));
+    c2.style.display = vb==null?'none':''; c2.setAttribute('cx',x(d)); c2.setAttribute('cy',y(vb||0));
+    showTip(ev, `<div class="h">${d}. dzień miesiąca</div>` + tipRow('var(--ink)',curName, va==null?'—':USD.format(va)) + tipRow(PREV,prevName, vb==null?'—':USD.format(vb)));
+  };
+  hovers['pace:leave'] = () => { const g=document.getElementById('pace-xh'); if(g) g.style.display='none'; };
+}
+
+/* ---------- income vs expenses, last 6 months ---------- */
+function renderIO(months){
+  const show = state.zarobki.entries.length || state.wydatki.entries.length;
+  $('io-sec').hidden = !show; if(!show) return;
+  const inc = months.map(m=>monthSum('zarobki',m)), exp = months.map(m=>monthSum('wydatki',m));
+  const W=720,H=220,T=30,B=26, EXP='#cfcfd4';
+  const max = niceMax(Math.max(...inc,...exp));
+  const y = v => T+(H-T-B)*(1-v/max);
+  const gw = W/6, bw = Math.min(26, gw*.22);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Przychody i wydatki w ostatnich 6 miesiącach">`;
+  s += `<line class="base" x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}"/>`;
+  months.forEach((m,i)=>{
+    const cx=i*gw+gw/2;
+    [[inc[i],'var(--ink)',cx-bw-1],[exp[i],EXP,cx+1]].forEach(([v,col,x])=>{
+      if(v>0){ const h=Math.max(4,y(0)-y(v)); s+=`<path d="M${x},${y(0)}v${-(h-4)}a4,4 0 0 1 4,-4h${bw-8}a4,4 0 0 1 4,4v${h-4}z" fill="${col}"/>`; } });
+    const net = inc[i]-exp[i];
+    if(inc[i]||exp[i]) s+=`<text x="${cx}" y="${y(Math.max(inc[i],exp[i]))-10}" text-anchor="middle" style="fill:${net>=0?'var(--accent)':'var(--neg)'}">${net>=0?'+':'−'}${short(Math.abs(net))}</text>`;
+    s+=`<text x="${cx}" y="${H-6}" text-anchor="middle">${MONTHS[+m.slice(5)-1]}</text>`;
+  });
+  $('io').innerHTML = s+'</svg>';
+  hovers.io = ev => {
+    const i = Math.min(5,Math.max(0,Math.floor(svgX($('io').firstChild,ev,W)/gw)));
+    const net = inc[i]-exp[i];
+    showTip(ev, `<div class="h">${monthLabel(months[i])}</div>` + tipRow('var(--ink)','Przychody',USD.format(inc[i])) + tipRow(EXP,'Wydatki',USD.format(exp[i])) +
+      `<div class="r" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><i></i><span>Bilans</span><b class="${net>=0?'good':'bad'}">${net>=0?'+':'−'}${USD.format(Math.abs(net))}</b></div>`);
+  };
 }
 
 function renderFilter(byMonth){
