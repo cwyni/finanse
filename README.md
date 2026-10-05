@@ -1,6 +1,6 @@
 # Finanse
 
-Prywatny licznik zarobków i wydatków w USD. Jeden plik HTML, bez serwera.
+Prywatny licznik zarobków i wydatków w złotówkach. Jeden plik HTML, bez serwera.
 
 Strona: https://cwyni.github.io/finanse/
 

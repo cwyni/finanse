@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Prywatny licznik zarobków i wydatków w USD.">
+<meta name="description" content="Prywatny licznik zarobków i wydatków w złotówkach.">
 <meta name="theme-color" content="#ffffff">
 <title>Finanse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -168,7 +168,7 @@ footer{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding-top:8
       <button role="tab" id="tab-wydatki" data-tab="wydatki" type="button">Wydatki</button>
     </div>
     <label class="goal" for="goal"><span id="goal-label"></span>
-      <input id="goal" type="number" min="0" step="50" inputmode="decimal" placeholder="$ —">
+      <input id="goal" type="number" min="0" step="50" inputmode="decimal" placeholder="zł">
     </label>
   </div>
   <div class="warn" id="warn" hidden>Ta przeglądarka blokuje zapis. Wpisy znikną po zamknięciu karty.</div>
@@ -195,7 +195,7 @@ footer{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding-top:8
   <section>
     <h2 id="form-title"></h2>
     <form id="form" autocomplete="off">
-      <div class="field"><input id="f-amount" type="number" step="0.01" min="0.01" inputmode="decimal" required placeholder="$ 0.00" aria-label="Kwota w USD"></div>
+      <div class="field"><input id="f-amount" type="number" step="0.01" min="0.01" inputmode="decimal" required placeholder="0,00 zł" aria-label="Kwota w złotych"></div>
       <div class="field"><input id="f-date" type="date" required aria-label="Data"></div>
       <div class="field"><input id="f-source" list="sourcelist" required aria-label="Opis"></div>
       <div class="field"><select id="f-kind" aria-label="Kategoria"></select></div>
@@ -253,8 +253,8 @@ footer{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding-top:8
 <div class="tip" id="tip" aria-hidden="true"></div>
 
 <script>
-const USD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
-const USD0 = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+const PLN = new Intl.NumberFormat('pl-PL',{style:'currency',currency:'PLN',useGrouping:'always'});
+const PLN0 = new Intl.NumberFormat('pl-PL',{style:'currency',currency:'PLN',maximumFractionDigits:0,useGrouping:'always'});
 const MONTHS = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
 const MONTHS_FULL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
 const MONTHS_GEN = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'];
@@ -273,9 +273,9 @@ const TABS = {
     kinds:['Wynagrodzenie','Freelance','Premia','Sprzedaż','Inwestycje','Inne'],
     groupBy:'source', groupTitle:'Źródła w ',
     emptyHint:'Dodaj pierwszy wpływ poniżej',
-    demo(m,i){ const r=[{date:m+'-10',amount:5200,source:'Etat (przykład)',kind:'Wynagrodzenie'}];
-      if(i%2===0) r.push({date:m+'-18',amount:900+i*150,source:'Zlecenia (przykład)',kind:'Freelance'});
-      if(i===3) r.push({date:m+'-22',amount:180,source:'eBay (przykład)',kind:'Sprzedaż'}); return r; }
+    demo(m,i){ const r=[{date:m+'-10',amount:8500,source:'Etat (przykład)',kind:'Wynagrodzenie'}];
+      if(i%2===0) r.push({date:m+'-18',amount:1500+i*250,source:'Zlecenia (przykład)',kind:'Freelance'});
+      if(i===3) r.push({date:m+'-22',amount:320,source:'OLX (przykład)',kind:'Sprzedaż'}); return r; }
   },
   wydatki: {
     key:'wydatki.usd.v1', moreIsGood:false,
@@ -284,12 +284,12 @@ const TABS = {
     groupBy:'kind', groupTitle:'Kategorie w ',
     emptyHint:'Dodaj pierwszy wydatek poniżej',
     demo(m,i){ return [
-      {date:m+'-01',amount:1450,source:'Czynsz (przykład)',kind:'Mieszkanie'},
-      {date:m+'-05',amount:120+i*8,source:'Prąd i internet (przykład)',kind:'Rachunki'},
-      {date:m+'-08',amount:310+i*25,source:'Supermarket (przykład)',kind:'Jedzenie'},
-      {date:m+'-14',amount:65,source:'Paliwo (przykład)',kind:'Transport'},
-      {date:m+'-20',amount:16,source:'Netflix (przykład)',kind:'Subskrypcje'},
-    ].concat(i%2?[{date:m+'-24',amount:90+i*20,source:'Kino i restauracja (przykład)',kind:'Rozrywka'}]:[]); }
+      {date:m+'-01',amount:2600,source:'Czynsz (przykład)',kind:'Mieszkanie'},
+      {date:m+'-05',amount:420+i*15,source:'Prąd i internet (przykład)',kind:'Rachunki'},
+      {date:m+'-08',amount:1150+i*60,source:'Supermarket (przykład)',kind:'Jedzenie'},
+      {date:m+'-14',amount:350,source:'Paliwo (przykład)',kind:'Transport'},
+      {date:m+'-20',amount:49,source:'Netflix (przykład)',kind:'Subskrypcje'},
+    ].concat(i%2?[{date:m+'-24',amount:240+i*40,source:'Kino i restauracja (przykład)',kind:'Rozrywka'}]:[]); }
   }
 };
 /* Categorical colours, fixed order (validated for colour-blind separation). Colour follows the category, never its rank; "Inne" is neutral grey. */
@@ -342,8 +342,8 @@ function render(){
 
   // hero
   $('h-label').textContent = (tab==='wydatki'?'Wydane · ':'Zarobione · ')+monthLabel(cur);
-  const [whole,cents] = USD.format(curSum).split('.');
-  $('h-value').innerHTML = `${esc(whole)}<span class="c">.${cents}</span>`;
+  const [whole,rest] = PLN.format(curSum).split(',');
+  $('h-value').innerHTML = `${esc(whole)}<span class="c">,${esc(rest)}</span>`;
   if(prevSum){ const p=(curSum-prevSum)/prevSum*100, good=(p>=0)===c.moreIsGood;
     $('h-delta').innerHTML = `<b class="${good?'good':'bad'}">${p>=0?'+':'−'}${Math.abs(p).toFixed(0)}%</b> względem ${MONTHS_GEN[+prev.slice(5)-1]}`; }
   else $('h-delta').textContent = entries.length ? 'Brak wpisów w poprzednim miesiącu' : c.emptyHint;
@@ -353,19 +353,19 @@ function render(){
     if(c.moreIsGood){
       $('h-goal').classList.remove('over');
       $('h-goalpct').textContent = Math.round(pct)+'% celu';
-      $('h-goalleft').textContent = curSum>=goal ? 'Cel osiągnięty' : 'Brakuje '+USD0.format(goal-curSum);
+      $('h-goalleft').textContent = curSum>=goal ? 'Cel osiągnięty' : 'Brakuje '+PLN0.format(goal-curSum);
     } else {
       $('h-goal').classList.toggle('over', curSum>goal);
       $('h-goalpct').textContent = Math.round(pct)+'% budżetu';
-      $('h-goalleft').textContent = curSum>goal ? 'Przekroczono o '+USD0.format(curSum-goal) : 'Zostało '+USD0.format(goal-curSum);
+      $('h-goalleft').textContent = curSum>goal ? 'Przekroczono o '+PLN0.format(curSum-goal) : 'Zostało '+PLN0.format(goal-curSum);
     } }
 
   const net = monthSum('zarobki',cur) - monthSum('wydatki',cur);
   $('stats').innerHTML = `
-    <div class="stat"><div class="eyebrow">Bilans miesiąca</div><div class="v ${net>0?'good':net<0?'bad':''}">${net>0?'+':net<0?'−':''}${USD.format(Math.abs(net))}</div></div>
-    <div class="stat"><div class="eyebrow">Poprzedni miesiąc</div><div class="v">${USD.format(prevSum)}</div></div>
-    <div class="stat"><div class="eyebrow">Rok ${year}</div><div class="v">${USD.format(yearSum)}</div></div>
-    <div class="stat"><div class="eyebrow">Średnio / miesiąc</div><div class="v">${USD.format(avg)}</div></div>`;
+    <div class="stat"><div class="eyebrow">Bilans miesiąca</div><div class="v ${net>0?'good':net<0?'bad':''}">${net>0?'+':net<0?'−':''}${PLN.format(Math.abs(net))}</div></div>
+    <div class="stat"><div class="eyebrow">Poprzedni miesiąc</div><div class="v">${PLN.format(prevSum)}</div></div>
+    <div class="stat"><div class="eyebrow">Rok ${year}</div><div class="v">${PLN.format(yearSum)}</div></div>
+    <div class="stat"><div class="eyebrow">Średnio / miesiąc</div><div class="v">${PLN.format(avg)}</div></div>`;
 
   renderChart(months, byMonth, cur, goal, c);
   renderMix(c, cur, prev, year);
@@ -377,7 +377,7 @@ function render(){
 }
 
 function niceMax(v){ if(v<=0) return 1000; const p=Math.pow(10,Math.floor(Math.log10(v))); for(const m of [1,1.5,2,2.5,3,4,5,6,8,10]) if(m*p>=v) return m*p; return 10*p; }
-const short = v => v>=1000 ? '$'+(Math.round(v/100)/10).toString().replace(/\.0$/,'')+'k' : USD0.format(v);
+const short = v => v>=1000 ? (Math.round(v/100)/10).toString().replace(/\.0$/,'').replace('.',',')+' tys.' : PLN0.format(v);
 
 /* ---------- tooltip ---------- */
 const tip = $('tip');
@@ -436,8 +436,8 @@ function renderChart(months, byMonth, cur, goal, c){
   hovers.chart = ev => {
     const i = Math.min(11,Math.max(0,Math.floor(svgX($('chart').firstChild,ev,W)/bw)));
     const ks = Object.entries(per[i]).sort((a,b)=>b[1]-a[1]);
-    showTip(ev, `<div class="h">${monthLabel(months[i])} · ${USD.format(vals[i])}</div>` +
-      (ks.length ? ks.map(([k,a])=>tipRow(colorOf(c,k),k,USD.format(a))).join('') : '<div class="r" style="grid-template-columns:1fr">Brak wpisów</div>'));
+    showTip(ev, `<div class="h">${monthLabel(months[i])} · ${PLN.format(vals[i])}</div>` +
+      (ks.length ? ks.map(([k,a])=>tipRow(colorOf(c,k),k,PLN.format(a))).join('') : '<div class="r" style="grid-template-columns:1fr">Brak wpisów</div>'));
   };
 }
 
@@ -456,13 +456,13 @@ function renderMix(c, cur, prev, year){
   if(!rows.length){ $('mix').innerHTML=''; $('mix').style.background='var(--soft)'; $('mixrows').innerHTML=`<div class="empty" style="padding:16px 0">Brak wpisów w tym okresie.</div>`; return; }
   $('mix').style.background='';
   $('mix').classList.toggle('hl', !!mixHover && now.has(mixHover));
-  $('mix').innerHTML = rows.map(([k,v])=>`<i data-k="${esc(k)}" class="${k===mixHover?'on':''}" style="flex:${v} 0 0;background:${colorOf(c,k)}" title="${esc(k)}: ${USD.format(v)}"></i>`).join('');
+  $('mix').innerHTML = rows.map(([k,v])=>`<i data-k="${esc(k)}" class="${k===mixHover?'on':''}" style="flex:${v} 0 0;background:${colorOf(c,k)}" title="${esc(k)}: ${PLN.format(v)}"></i>`).join('');
   $('mixrows').innerHTML = rows.map(([k,v])=>{
     let ch='';
     if(before){ const b=before.get(k)||0;
       if(!b) ch='<span title="Nowa kategoria w tym okresie">nowe</span>';
       else { const p=(v-b)/b*100, good=(p>=0)===c.moreIsGood; ch = Math.abs(p)<1 ? '0%' : `<span class="${good?'good':'bad'}">${p>0?'+':'−'}${Math.abs(p).toFixed(0)}%</span>`; } }
-    return `<div class="mixrow${k===mixHover?' on':''}" data-k="${esc(k)}"><i class="sw" style="background:${colorOf(c,k)}"></i><span class="n">${esc(k)}</span><span class="amt">${USD.format(v)}</span><span class="p">${Math.round(v/total*100)}%</span><span class="ch">${ch}</span></div>`;
+    return `<div class="mixrow${k===mixHover?' on':''}" data-k="${esc(k)}"><i class="sw" style="background:${colorOf(c,k)}"></i><span class="n">${esc(k)}</span><span class="amt">${PLN.format(v)}</span><span class="p">${Math.round(v/total*100)}%</span><span class="ch">${ch}</span></div>`;
   }).join('');
 }
 $('mix-period').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; mixPeriod=b.dataset.p; render(); });
@@ -509,7 +509,7 @@ function renderPace(cur, prev){
     const va = d<=ea ? a[d] : null, vb = d<=eb ? b[d] : null;
     c1.style.display = va==null?'none':''; c1.setAttribute('cx',x(d)); c1.setAttribute('cy',y(va||0));
     c2.style.display = vb==null?'none':''; c2.setAttribute('cx',x(d)); c2.setAttribute('cy',y(vb||0));
-    showTip(ev, `<div class="h">${d}. dzień miesiąca</div>` + tipRow('var(--ink)',curName, va==null?'—':USD.format(va)) + tipRow(PREV,prevName, vb==null?'—':USD.format(vb)));
+    showTip(ev, `<div class="h">${d}. dzień miesiąca</div>` + tipRow('var(--ink)',curName, va==null?'—':PLN.format(va)) + tipRow(PREV,prevName, vb==null?'—':PLN.format(vb)));
   };
   hovers['pace:leave'] = () => { const g=document.getElementById('pace-xh'); if(g) g.style.display='none'; };
 }
@@ -537,8 +537,8 @@ function renderIO(months){
   hovers.io = ev => {
     const i = Math.min(5,Math.max(0,Math.floor(svgX($('io').firstChild,ev,W)/gw)));
     const net = inc[i]-exp[i];
-    showTip(ev, `<div class="h">${monthLabel(months[i])}</div>` + tipRow('var(--ink)','Przychody',USD.format(inc[i])) + tipRow(EXP,'Wydatki',USD.format(exp[i])) +
-      `<div class="r" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><i></i><span>Bilans</span><b class="${net>=0?'good':'bad'}">${net>=0?'+':'−'}${USD.format(Math.abs(net))}</b></div>`);
+    showTip(ev, `<div class="h">${monthLabel(months[i])}</div>` + tipRow('var(--ink)','Przychody',PLN.format(inc[i])) + tipRow(EXP,'Wydatki',PLN.format(exp[i])) +
+      `<div class="r" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><i></i><span>Bilans</span><b class="${net>=0?'good':'bad'}">${net>=0?'+':'−'}${PLN.format(Math.abs(net))}</b></div>`);
   };
 }
 
@@ -546,7 +546,7 @@ function renderFilter(byMonth){
   const keys=[...byMonth.keys()].sort().reverse();
   if(filter!=='all' && !keys.includes(filter)) filter='all';
   $('filter').hidden = !keys.length;
-  $('filter').innerHTML = `<option value="all">Wszystko</option>`+keys.map(k=>`<option value="${k}" ${k===filter?'selected':''}>${monthLabel(k)} · ${USD0.format(byMonth.get(k))}</option>`).join('');
+  $('filter').innerHTML = `<option value="all">Wszystko</option>`+keys.map(k=>`<option value="${k}" ${k===filter?'selected':''}>${monthLabel(k)} · ${PLN0.format(byMonth.get(k))}</option>`).join('');
 }
 
 function renderList(){
@@ -559,10 +559,10 @@ function renderList(){
     .sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||0)-(a.createdAt||0));
   $('list').innerHTML = '<ul class="rows">'+list.map(e=>{
     const [Y,M,D]=e.date.split('-');
-    if(pendingDelete===e.id) return `<li><span class="d">${D}.${M}.${Y.slice(2)}</span><div class="confirm">Usunąć ${esc(e.source)} · ${USD.format(e.amount)}?<button data-yes="${e.id}">Usuń</button><button class="no" data-no>Anuluj</button></div></li>`;
+    if(pendingDelete===e.id) return `<li><span class="d">${D}.${M}.${Y.slice(2)}</span><div class="confirm">Usunąć ${esc(e.source)} · ${PLN.format(e.amount)}?<button data-yes="${e.id}">Usuń</button><button class="no" data-no>Anuluj</button></div></li>`;
     return `<li><span class="d">${D}.${M}.${Y.slice(2)}</span>
       <div class="t"><div class="s">${esc(e.source)}</div><div class="k">${esc(e.kind)}${e.note?' · '+esc(e.note):''}</div></div>
-      <span class="a">${tab==='wydatki'?'−':''}${USD.format(e.amount)}</span>
+      <span class="a">${tab==='wydatki'?'−':''}${PLN.format(e.amount)}</span>
       <button class="del" data-del="${e.id}" aria-label="Usuń wpis">×</button></li>`;
   }).join('')+'</ul>';
 }
@@ -582,7 +582,7 @@ $('form').addEventListener('submit',ev=>{
   if(!(amount>0)){ toast('Wpisz kwotę większą od zera'); return; }
   S().entries.push({ id:newId(), amount, date:$('f-date').value, source:$('f-source').value.trim(), kind:$('f-kind').value, note:$('f-note').value.trim(), createdAt:Date.now() });
   save(); render();
-  toast('Dodano '+USD.format(amount));
+  toast('Dodano '+PLN.format(amount));
   $('f-amount').value=''; $('f-source').value=''; $('f-note').value=''; $('f-amount').focus();
 });
 
@@ -603,9 +603,9 @@ function download(name, text, type){
 }
 $('export-csv').onclick=()=>{
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const rows=[['Typ','Data','Kwota (USD)','Opis','Kategoria','Notatka']];
+  const rows=[['Typ','Data','Kwota (zł)','Opis','Kategoria','Notatka']];
   for(const k in TABS) for(const e of [...state[k].entries].sort((a,b)=>a.date.localeCompare(b.date)))
-    rows.push([k==='wydatki'?'Wydatek':'Wpływ',e.date,k==='wydatki'?-e.amount:e.amount,e.source,e.kind,e.note]);
+    rows.push([k==='wydatki'?'Wydatek':'Wpływ',e.date,String(k==='wydatki'?-e.amount:e.amount).replace('.',','),e.source,e.kind,e.note]);
   download('finanse-'+todayStr()+'.csv','﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
 };
 $('export-json').onclick=()=>download('finanse-kopia-'+todayStr()+'.json',JSON.stringify({version:2,...state},null,2),'application/json');
